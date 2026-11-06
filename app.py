@@ -1,65 +1,67 @@
 import streamlit as st
 import pandas as pd
 from docx import Document
-from docx.shared import Pt
 import io
 
 # 1. CẤU HÌNH TRANG
-st.set_page_config(page_title="Tạo Ma Trận Đề Kiểm Tra Tin Học 2018", layout="wide", page_icon="📚")
+st.set_page_config(page_title="Ma Trận Đề Kiểm Tra GDPT 2018", layout="wide", page_icon="📚")
 
-# 2. DỮ LIỆU CHƯƠNG TRÌNH GDPT 2018 MÔN TIN HỌC (THCS)
+# 2. DỮ LIỆU CHƯƠNG TRÌNH
 THEMES = {
     "Chủ đề A. Máy tính và cộng đồng": ["Thông tin và dữ liệu", "Biểu diễn thông tin"],
     "Chủ đề B. Mạng máy tính và Internet": ["Giới thiệu về mạng máy tính", "Internet và công cụ tìm kiếm"],
     "Chủ đề C. Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin": ["Tổ chức thông tin", "Sơ đồ tư duy"],
     "Chủ đề D. Đạo đức, pháp luật và văn hoá trong môi trường số": ["Bản quyền nội dung số", "Giao tiếp an toàn cơ bản"],
     "Chủ đề E. Ứng dụng tin học": ["Soạn thảo văn bản", "Trình chiếu", "Bảng tính điện tử"],
-    "Chủ đề F. Giải quyết vấn đề với sự trợ giúp của máy tính": ["Thuật toán cơ bản", "Lập trình trực quan (Scratch/Python)"]
+    "Chủ đề F. Giải quyết vấn đề với sự trợ giúp của máy tính": ["Thuật toán cơ bản", "Lập trình trực quan"]
 }
 
-# 3. GIAO DIỆN HEADER (Bộ lọc)
+# 3. HEADER & BỘ LỌC
 st.title("📚 HỆ THỐNG XÂY DỰNG MA TRẬN & ĐẶC TẢ ĐỀ KIỂM TRA")
 st.markdown("---")
 
 col1, col2, col3, col4 = st.columns(4)
-with col1:
-    mon_hoc = st.selectbox("MÔN HỌC:", ["Tin học"])
-with col2:
-    khoi_lop = st.selectbox("KHỐI LỚP:", ["Khối 6", "Khối 7", "Khối 8", "Khối 9"])
-with col3:
-    ky_thi = st.selectbox("KỲ THI / ĐỢT KIỂM TRA:", ["Giữa kì I", "Cuối kì I", "Giữa kì II", "Cuối kì II"])
-with col4:
-    thoi_luong = st.number_input("THỜI LƯỢNG (phút):", min_value=15, value=45, step=15)
+mon_hoc = col1.selectbox("MÔN HỌC:", ["Tin học"])
+khoi_lop = col2.selectbox("KHỐI LỚP:", ["Khối 6", "Khối 7", "Khối 8", "Khối 9"])
+ky_thi = col3.selectbox("KỲ THI / ĐỢT:", ["Giữa kì I", "Cuối kì I", "Giữa kì II", "Cuối kì II"])
+thoi_luong = col4.number_input("THỜI LƯỢNG (phút):", min_value=15, value=45, step=15)
 
-st.markdown("""<style>
-    .stCheckbox > label { font-weight: bold; color: #2e6c80; }
-    .header-style { background-color: #f0f2f6; padding: 10px; border-radius: 5px; }
-</style>""", unsafe_allow_html=True)
+st.markdown("""
+<style>
+    .header-style { background-color: #f0f2f6; padding: 10px; border-radius: 5px; text-align: center;}
+</style>
+""", unsafe_allow_html=True)
 
-# 4. BỐ CỤC CHÍNH (Sidebar Trái - Bảng Phải)
-left_col, right_col = st.columns([1, 3])
+# 4. CHIA CỘT GIAO DIỆN
+left_col, right_col = st.columns([1, 2.5])
 
+# CỘT TRÁI: CHỌN CHỦ ĐỀ
 with left_col:
-    st.markdown("<div class='header-style'><b>YÊU CẦU CẦN ĐẠT</b></div>", unsafe_allow_html=True)
+    st.markdown("<div class='header-style'><b>BỘ KHUNG KIẾN THỨC YÊU CẦU</b></div>", unsafe_allow_html=True)
     st.write("")
+    
     selected_themes = []
-    for theme in THEMES.keys():
-        with st.expander(theme, expanded=(theme == "Chủ đề A. Máy tính và cộng đồng" or theme == "Chủ đề B. Mạng máy tính và Internet")):
-            if st.checkbox(f"Chọn toàn bộ", key=f"all_{theme}"):
-                selected_themes.extend(THEMES[theme])
+    for theme, topics in THEMES.items():
+        # Mặc định mở rộng 2 chủ đề đầu để giao diện giống mẫu
+        is_expanded = (theme in ["Chủ đề A. Máy tính và cộng đồng", "Chủ đề B. Mạng máy tính và Internet"])
+        with st.expander(theme, expanded=is_expanded):
+            # Tuỳ chọn check tất cả
+            if st.checkbox("✅ Chọn toàn bộ chủ đề này", key=f"all_{theme}"):
+                selected_themes.extend(topics)
             else:
-                for topic in THEMES[theme]:
-                    if st.checkbox(topic, key=f"topic_{topic}"):
+                for topic in topics:
+                    if st.checkbox(f"• {topic}", key=f"topic_{topic}"):
                         selected_themes.append(topic)
 
+# CỘT PHẢI: BẢNG MA TRẬN
+edited_df = None
 with right_col:
-    st.info("💡 Quy ước: Hàng trên nhập số lượng (ý/câu). Mỗi ý = 0.25đ. Hàng dưới tự động sinh mã câu.")
+    st.info("💡 Quy ước: Nhập số lượng ý/câu vào bảng bên dưới. Mỗi ý/câu tương ứng 0.25đ. Hệ thống sẽ tự động tổng hợp.")
     
-    # Khởi tạo bảng dữ liệu Ma trận
-    if not selected_themes:
-        st.warning("👈 Vui lòng chọn ít nhất một nội dung kiến thức ở cột bên trái.")
+    if len(selected_themes) == 0:
+        st.warning("👈 Vui lòng đánh dấu chọn ít nhất một nội dung kiến thức ở cột bên trái để hiển thị bảng ma trận.")
     else:
-        # Cấu trúc cột dựa theo hình (TNKQ, Đúng-Sai, Tự luận) x (Biết, Hiểu, Vận dụng)
+        # Cấu trúc các cột điểm
         columns = [
             "Nội dung kiến thức", 
             "TNKQ - Nhận biết", "TNKQ - Thông hiểu", "TNKQ - Vận dụng",
@@ -67,62 +69,69 @@ with right_col:
             "TL - Nhận biết", "TL - Thông hiểu", "TL - Vận dụng"
         ]
         
+        # Tạo khung dữ liệu ban đầu
         df = pd.DataFrame(columns=columns)
         df["Nội dung kiến thức"] = selected_themes
         for col in columns[1:]:
-            df[col] = 0  # Mặc định số câu là 0
+            df[col] = 0  # Gán giá trị mặc định là 0
             
+        # Hiển thị bảng cho phép nhập liệu
         edited_df = st.data_editor(
             df, 
             use_container_width=True,
             hide_index=True,
-            num_rows="dynamic",
-            column_config={
-                "Nội dung kiến thức": st.column_config.TextColumn("Nội dung / Đơn vị kiến thức", disabled=True),
-            }
+            disabled=["Nội dung kiến thức"], # Không cho phép sửa tên bài học
         )
 
-# 5. XỬ LÝ XUẤT FILE WORD (.docx)
+# 5. HÀM TẠO FILE WORD
 def create_word_matrix(dataframe, lop, ky):
     doc = Document()
-    doc.add_heading(f'MA TRẬN ĐỀ KIỂM TRA {ky.upper()} - MÔN TIN HỌC {lop[-1]}', 0)
-    doc.add_paragraph('Chương trình GDPT 2018')
     
-    # Tạo bảng
+    # Tiêu đề file Word
+    doc.add_heading(f'MA TRẬN ĐỀ KIỂM TRA {ky.upper()} - MÔN TIN HỌC {lop[-1]}', level=1)
+    doc.add_paragraph('Chương trình Giáo dục phổ thông 2018')
+    
+    # Tạo bảng trong Word
     table = doc.add_table(rows=1, cols=len(dataframe.columns))
     table.style = 'Table Grid'
     
-    # Header
+    # Đổ Header
     hdr_cells = table.rows[0].cells
     for i, col_name in enumerate(dataframe.columns):
         hdr_cells[i].text = col_name
         
-    # Thêm dữ liệu
+    # Đổ dữ liệu từ Streamlit vào Word
     for index, row in dataframe.iterrows():
         row_cells = table.add_row().cells
         for i, col_name in enumerate(dataframe.columns):
             row_cells[i].text = str(row[col_name])
             
-    # Lưu vào bộ nhớ đệm
+    # Lưu vào RAM (BytesIO) để tải xuống
     bio = io.BytesIO()
     doc.save(bio)
     return bio.getvalue()
 
-# 6. CÁC NÚT CHỨC NĂNG (FOOTER)
+# 6. KHU VỰC NÚT BẤM (FOOTER)
 st.markdown("---")
-btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1.5, 1.5, 1.5, 5])
+btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([2, 2, 2, 4])
 
 with btn_col1:
-    st.button("💾 Lưu Ma trận & Bản đặc tả", use_container_width=True)
+    st.button("💾 Lưu Cấu Hình Tạm", use_container_width=True)
+    
 with btn_col2:
-    if selected_themes:
-        word_file = create_word_matrix(edited_df, khoi_lop, ky_thi)
-        st.download_button(
-            label="📥 Tải Ma trận (Word)",
-            data=word_file,
-            file_name=f"Ma_Tran_Tin_Hoc_{khoi_lop.replace(' ', '')}_{ky_thi.replace(' ', '')}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            use_container_width=True
-        )
+    if edited_df is not None: # Nếu bảng đã được tạo
+        try:
+            word_file = create_word_matrix(edited_df, khoi_lop, ky_thi)
+            st.download_button(
+                label="📥 Xuất file Word",
+                data=word_file,
+                file_name=f"Ma_Tran_Tin_Hoc_{khoi_lop.replace(' ', '')}_{ky_thi.replace(' ', '')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+                type="primary"
+            )
+        except Exception as e:
+            st.error(f"Lỗi tạo file Word: {e}")
+            
 with btn_col3:
-    st.button("🤖 Tạo đề thi bằng AI", type="primary", use_container_width=True)
+    st.button("🤖 AI Sinh Đề (Demo)", use_container_width=True)
