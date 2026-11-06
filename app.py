@@ -8,7 +8,7 @@ import io
 # 1. CẤU HÌNH TRANG
 st.set_page_config(page_title="Ma Trận & Đặc Tả GDPT 2018", layout="wide", page_icon="📚")
 
-# 2. DỮ LIỆU CHƯƠNG TRÌNH & YÊU CẦU CẦN ĐẠT (Trích mẫu)
+# 2. DỮ LIỆU CHƯƠNG TRÌNH & YÊU CẦU CẦN ĐẠT
 CURRICULUM = {
     "Khối 6": {
         "Chủ đề 1: Máy tính và cộng đồng": {
@@ -20,10 +20,9 @@ CURRICULUM = {
             "Mạng máy tính": "- Nhận biết: Khái niệm mạng, các thành phần.\n- Thông hiểu: Vai trò của thiết bị mạng.\n- Vận dụng: Phân biệt mạng có dây, không dây."
         }
     },
-    # (Để ngắn gọn, bạn có thể tự thêm dữ liệu Khối 7,8,9 tương tự cấu trúc trên)
-    "Khối 7": {"Chủ đề 1: Máy tính và cộng đồng": {"Thiết bị vào - ra": "- YCCĐ: ...", "Hệ điều hành": "- YCCĐ: ..."}},
-    "Khối 8": {"Chủ đề 1: Máy tính và cộng đồng": {"Lịch sử máy tính": "- YCCĐ: ...", "Dữ liệu số": "- YCCĐ: ..."}},
-    "Khối 9": {"Chủ đề 1: Máy tính và cộng đồng": {"Tin học và xã hội": "- YCCĐ: ...", "Chất lượng thông tin": "- YCCĐ: ..."}}
+    "Khối 7": {"Chủ đề 1: Máy tính và cộng đồng": {"Thiết bị vào - ra": "- Nhận biết: ...\n- Thông hiểu: ...", "Hệ điều hành": "- Nhận biết: ...\n- Thông hiểu: ..."}},
+    "Khối 8": {"Chủ đề 1: Máy tính và cộng đồng": {"Lịch sử máy tính": "- Nhận biết: ...\n- Thông hiểu: ...", "Dữ liệu số": "- Nhận biết: ...\n- Thông hiểu: ..."}},
+    "Khối 9": {"Chủ đề 1: Máy tính và cộng đồng": {"Tin học và xã hội": "- Nhận biết: ...\n- Thông hiểu: ...", "Chất lượng thông tin": "- Nhận biết: ...\n- Thông hiểu: ..."}}
 }
 
 # 3. HEADER & BỘ LỌC
@@ -54,7 +53,7 @@ with left_col:
 
 edited_df = None
 with right_col:
-    st.info("💡 Quy ước: Nhập số lượng ý/câu. Trắc nghiệm NLC (0.25đ/câu), Đúng-Sai (0.25đ/ý), Tự luận (Điểm linh hoạt tự chia).")
+    st.info("💡 Quy ước: Nhập số lượng ý/câu. Trắc nghiệm NLC (0.25đ/câu), Đúng-Sai (0.25đ/ý), Tự luận (Điểm linh hoạt).")
     
     if len(selected_topics) == 0:
         st.warning(f"👈 Vui lòng chọn ít nhất một nội dung kiến thức.")
@@ -88,17 +87,13 @@ def set_cell(cell, text, bold=False, center=True):
 def create_word_export(dataframe, yccd_data, lop, ky):
     doc = Document()
     
-    # -----------------------------
-    # PHẦN 1: MA TRẬN ĐỀ KIỂM TRA
-    # -----------------------------
+    # --- PHẦN 1: MA TRẬN ---
     doc.add_heading(f'MA TRẬN ĐỀ KIỂM TRA {ky.upper()} - MÔN TIN HỌC {lop[-1]}', level=1)
     doc.add_paragraph('NĂM HỌC 2026-2027\n').alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Bảng 16 cột: TT, Chủ đề, Nội dung, [NLC: 3], [ĐS: 3], [TL: 3], Tổng TN, Tổng ĐS, Tổng TL, Điểm
     t = doc.add_table(rows=4, cols=16)
     t.style = 'Table Grid'
     
-    # Merge Header 
     t.cell(0,0).merge(t.cell(3,0)); set_cell(t.cell(0,0), "TT", True)
     t.cell(0,1).merge(t.cell(3,1)); set_cell(t.cell(0,1), "Chủ đề/\nChương", True)
     t.cell(0,2).merge(t.cell(3,2)); set_cell(t.cell(0,2), "Nội dung/\nĐơn vị kiến thức", True)
@@ -117,4 +112,122 @@ def create_word_export(dataframe, yccd_data, lop, ky):
         
     t.cell(0,12).merge(t.cell(1,14)); set_cell(t.cell(0,12), "Tổng", True)
     t.cell(2,12).merge(t.cell(3,12)); set_cell(t.cell(2,12), "TN")
-    t.cell(2,13).merge(t.cell(3,13)); set_cell(t.cell(2,
+    t.cell(2,13).merge(t.cell(3,13)); set_cell(t.cell(2,13), "ĐS")
+    t.cell(2,14).merge(t.cell(3,14)); set_cell(t.cell(2,14), "TL")
+    
+    t.cell(0,15).merge(t.cell(3,15)); set_cell(t.cell(0,15), "Điểm", True)
+    
+    tt = 1
+    sum_cols = [0]*13 
+    current_theme = ""
+    for index, row in dataframe.iterrows():
+        r = t.add_row().cells
+        if row["Chủ đề"] != current_theme:
+            set_cell(r[0], str(tt), center=True)
+            set_cell(r[1], row["Chủ đề"], center=False)
+            current_theme = row["Chủ đề"]
+            tt += 1
+        
+        set_cell(r[2], row["Nội dung kiến thức"], center=False)
+        
+        for i in range(9):
+            val = int(row[columns[2+i]])
+            set_cell(r[3+i], val if val>0 else "")
+            sum_cols[i] += val
+            
+        sum_tn = int(row["NLC-Biết"]) + int(row["NLC-Hiểu"]) + int(row["NLC-VD"])
+        sum_ds = int(row["ĐS-Biết"]) + int(row["ĐS-Hiểu"]) + int(row["ĐS-VD"])
+        sum_tl = int(row["TL-Biết"]) + int(row["TL-Hiểu"]) + int(row["TL-VD"])
+        diem_tn = sum_tn * 0.25 + sum_ds * 0.25 
+        
+        set_cell(r[12], sum_tn if sum_tn>0 else "")
+        set_cell(r[13], sum_ds if sum_ds>0 else "")
+        set_cell(r[14], sum_tl if sum_tl>0 else "")
+        set_cell(r[15], str(diem_tn))
+        
+        sum_cols[9] += sum_tn; sum_cols[10] += sum_ds; sum_cols[11] += sum_tl; sum_cols[12] += diem_tn
+
+    r_total = t.add_row().cells
+    r_total[0].merge(r_total[2]); set_cell(r_total[0], "Tổng số câu", True)
+    for i in range(13):
+        set_cell(r_total[3+i], sum_cols[i], True)
+
+    doc.add_page_break()
+
+    # --- PHẦN 2: BẢN ĐẶC TẢ ---
+    doc.add_heading(f'BẢNG ĐẶC TẢ ĐỀ KIỂM TRA {ky.upper()} - TIN HỌC {lop[-1]}', level=1)
+    doc.add_paragraph('NĂM HỌC 2026-2027\n').alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    t2 = doc.add_table(rows=4, cols=16)
+    t2.style = 'Table Grid'
+    
+    t2.cell(0,0).merge(t2.cell(3,0)); set_cell(t2.cell(0,0), "TT", True)
+    t2.cell(0,1).merge(t2.cell(3,1)); set_cell(t2.cell(0,1), "Chủ đề", True)
+    t2.cell(0,2).merge(t2.cell(3,2)); set_cell(t2.cell(0,2), "Nội dung", True)
+    t2.cell(0,3).merge(t2.cell(3,3)); set_cell(t2.cell(0,3), "Yêu cầu cần đạt", True)
+    
+    t2.cell(0,4).merge(t2.cell(0,12)); set_cell(t2.cell(0,4), "Mức độ đánh giá", True)
+    t2.cell(1,4).merge(t2.cell(1,9)); set_cell(t2.cell(1,4), "TNKQ", True)
+    t2.cell(1,10).merge(t2.cell(2,12)); set_cell(t2.cell(1,10), "Tự luận", True)
+    t2.cell(2,4).merge(t2.cell(2,6)); set_cell(t2.cell(2,4), "Nhiều lựa chọn", True)
+    t2.cell(2,7).merge(t2.cell(2,9)); set_cell(t2.cell(2,7), "Đúng - Sai", True)
+    
+    for i in range(3):
+        set_cell(t2.cell(3, 4+i), ["Biết", "Hiểu", "VD"][i])
+        set_cell(t2.cell(3, 7+i), ["Biết", "Hiểu", "VD"][i])
+        set_cell(t2.cell(3, 10+i), ["Biết", "Hiểu", "VD"][i])
+        
+    t2.cell(0,13).merge(t2.cell(1,15)); set_cell(t2.cell(0,13), "Tổng", True)
+    t2.cell(2,13).merge(t2.cell(3,13)); set_cell(t2.cell(2,13), "TN")
+    t2.cell(2,14).merge(t2.cell(3,14)); set_cell(t2.cell(2,14), "ĐS")
+    t2.cell(2,15).merge(t2.cell(3,15)); set_cell(t2.cell(2,15), "TL")
+
+    tt2 = 1
+    current_theme2 = ""
+    for index, row in dataframe.iterrows():
+        r = t2.add_row().cells
+        if row["Chủ đề"] != current_theme2:
+            set_cell(r[0], str(tt2), center=True)
+            set_cell(r[1], row["Chủ đề"], center=False)
+            current_theme2 = row["Chủ đề"]
+            tt2 += 1
+            
+        set_cell(r[2], row["Nội dung kiến thức"], center=False)
+        
+        yccd = ""
+        for item in yccd_data:
+            if item["Nội dung"] == row["Nội dung kiến thức"]:
+                yccd = item["YCCĐ"]
+                break
+        
+        set_cell(r[3], yccd, center=False)
+        
+        for i in range(9):
+            val = int(row[columns[2+i]])
+            set_cell(r[4+i], val if val>0 else "")
+            
+        sum_tn = int(row["NLC-Biết"]) + int(row["NLC-Hiểu"]) + int(row["NLC-VD"])
+        sum_ds = int(row["ĐS-Biết"]) + int(row["ĐS-Hiểu"]) + int(row["ĐS-VD"])
+        sum_tl = int(row["TL-Biết"]) + int(row["TL-Hiểu"]) + int(row["TL-VD"])
+        set_cell(r[13], sum_tn if sum_tn>0 else "")
+        set_cell(r[14], sum_ds if sum_ds>0 else "")
+        set_cell(r[15], sum_tl if sum_tl>0 else "")
+
+    bio = io.BytesIO()
+    doc.save(bio)
+    return bio.getvalue()
+
+# 6. NÚT CHỨC NĂNG TẢI XUỐNG
+st.markdown("---")
+btn_col = st.columns([2, 4, 2])
+with btn_col[1]:
+    if edited_df is not None:
+        word_file = create_word_export(edited_df, selected_topics, khoi_lop, ky_thi)
+        st.download_button(
+            label="📥 Tải File Word (Chuẩn Ma Trận & Đặc Tả)",
+            data=word_file,
+            file_name=f"Ma_Tran_Dac_Ta_Tin_Hoc_{khoi_lop.replace(' ', '')}_{ky_thi.replace(' ', '')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True,
+            type="primary"
+        )
